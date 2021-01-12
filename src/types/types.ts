@@ -81,7 +81,7 @@ type MentionInputProps = Omit<TextInputProps, "onChange"> & {
   onChange: (value: string) => any;
 
   partTypes?: PartType[];
-  ReplyMessageBox?: () => React.ReactNode;
+  ReplyMessageBox?: () => ReactNode;
 
   inputRef?: Ref<TextInput>;
 
