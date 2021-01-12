@@ -195,6 +195,7 @@ const MentionInput: FC<MentionInputProps> = ({
       ))}
       <View>
         <View style={{ zIndex: 10, width: "100%", height: 55 }}>
+          <Text>HELLO WORLD</Text>
           {replyMessageBox}
         </View>
         <TextInput
