@@ -31,6 +31,7 @@ const MentionInput: FC<MentionInputProps> = ({
 
   ...textInputProps
 }) => {
+  console.log("I AM HERE");
   console.log(replyMessageBox);
   const textInput = useRef<TextInput | null>(null);
 
