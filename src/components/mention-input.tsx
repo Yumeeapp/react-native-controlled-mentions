@@ -21,7 +21,7 @@ const MentionInput: FC<MentionInputProps> = ({
   onChange,
 
   partTypes = [],
-  replyMessageBox: ReplyMessageBox,
+  replyMessageBox,
 
   inputRef: propInputRef,
 
@@ -194,9 +194,7 @@ const MentionInput: FC<MentionInputProps> = ({
         </React.Fragment>
       ))}
       <View>
-        <View style={{ zIndex: 10, width: "100%", height: 55 }}>
-          <Text>HELLO WORLD</Text>
-          <ReplyMessageBox />
+          {replyMessageBox()}
         </View>
         <TextInput
           {...textInputProps}
