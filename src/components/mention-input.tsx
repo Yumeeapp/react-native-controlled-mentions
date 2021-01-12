@@ -32,7 +32,7 @@ const MentionInput: FC<MentionInputProps> = ({
   ...textInputProps
 }) => {
   console.log("I AM HERE");
-  console.log(replyMessageBox);
+  console.log(ReplyMessageBox);
   const textInput = useRef<TextInput | null>(null);
 
   const [selection, setSelection] = useState({ start: 0, end: 0 });

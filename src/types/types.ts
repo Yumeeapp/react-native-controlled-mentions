@@ -5,6 +5,7 @@ import {
   TextInputProps,
   TextStyle,
   ViewStyle,
+  ChildCompProps,
 } from "react-native";
 
 type Suggestion = {
@@ -81,7 +82,7 @@ type MentionInputProps = Omit<TextInputProps, "onChange"> & {
   onChange: (value: string) => any;
 
   partTypes?: PartType[];
-  ReplyMessageBox?: ComponentType;
+  ReplyMessageBox?: ComponentType<ChildCompProps>;
 
   inputRef?: Ref<TextInput>;
 
