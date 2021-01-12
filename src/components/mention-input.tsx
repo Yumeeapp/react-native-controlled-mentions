@@ -21,7 +21,7 @@ const MentionInput: FC<MentionInputProps> = ({
   onChange,
 
   partTypes = [],
-  ReplyMessageBox: () => React.Component,
+  ReplyMessageBox,
 
   inputRef: propInputRef,
 
