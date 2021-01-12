@@ -194,8 +194,7 @@ const MentionInput: FC<MentionInputProps> = ({
         </React.Fragment>
       ))}
       <View>
-          {replyMessageBox()}
-        </View>
+        {replyMessageBox()}
         <TextInput
           {...textInputProps}
           ref={handleTextInputRef}
