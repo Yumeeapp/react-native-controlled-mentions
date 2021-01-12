@@ -31,6 +31,7 @@ const MentionInput: FC<MentionInputProps> = ({
 
   ...textInputProps
 }) => {
+  console.log(replyMessageBox);
   const textInput = useRef<TextInput | null>(null);
 
   const [selection, setSelection] = useState({ start: 0, end: 0 });
@@ -192,7 +193,9 @@ const MentionInput: FC<MentionInputProps> = ({
         </React.Fragment>
       ))}
       <View>
-        {replyMessageBox}
+        <View style={{ zIndex: 10, width: "100%", height: 55 }}>
+          {replyMessageBox}
+        </View>
         <TextInput
           {...textInputProps}
           ref={handleTextInputRef}
