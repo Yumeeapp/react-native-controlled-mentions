@@ -1,4 +1,4 @@
-import { ReactNode, Ref, ComponentType } from "react";
+import { ReactNode, Ref, Component } from "react";
 import {
   StyleProp,
   TextInput,
@@ -82,7 +82,7 @@ type MentionInputProps = Omit<TextInputProps, "onChange"> & {
   onChange: (value: string) => any;
 
   partTypes?: PartType[];
-  ReplyMessageBox?: ComponentType<ChildCompProps>;
+  ReplyMessageBox?: typeof Component;
 
   inputRef?: Ref<TextInput>;
 
