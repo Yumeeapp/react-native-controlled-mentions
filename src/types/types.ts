@@ -1,11 +1,10 @@
-import { ReactNode, Ref, Component, ElementType } from "react";
+import { ReactNode, Ref } from "react";
 import {
   StyleProp,
   TextInput,
   TextInputProps,
   TextStyle,
   ViewStyle,
-  ChildCompProps,
 } from "react-native";
 
 type Suggestion = {
