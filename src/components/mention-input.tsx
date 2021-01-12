@@ -21,7 +21,7 @@ const MentionInput: FC<MentionInputProps> = ({
   onChange,
 
   partTypes = [],
-  replyMessageBox,
+  ReplyMessageBox,
 
   inputRef: propInputRef,
 
@@ -196,7 +196,7 @@ const MentionInput: FC<MentionInputProps> = ({
       <View>
         <View style={{ zIndex: 10, width: "100%", height: 55 }}>
           <Text>HELLO WORLD</Text>
-          {replyMessageBox}
+          <ReplyMessageBox />
         </View>
         <TextInput
           {...textInputProps}
