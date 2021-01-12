@@ -1,5 +1,11 @@
-import { ReactNode, Ref } from 'react';
-import { StyleProp, TextInput, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import { ReactNode, Ref } from "react";
+import {
+  StyleProp,
+  TextInput,
+  TextInputProps,
+  TextStyle,
+  ViewStyle,
+} from "react-native";
 
 type Suggestion = {
   id: string;
@@ -70,11 +76,12 @@ type Part = {
   data?: MentionData;
 };
 
-type MentionInputProps = Omit<TextInputProps, 'onChange'> & {
+type MentionInputProps = Omit<TextInputProps, "onChange"> & {
   value: string;
   onChange: (value: string) => any;
 
   partTypes?: PartType[];
+  ReplyMessageBox?: React.ReactNode;
 
   inputRef?: Ref<TextInput>;
 
