@@ -39,7 +39,7 @@ import { MentionInput } from 'react-native-controlled-mentions'
 Replace your [TextInput](https://reactnative.dev/docs/textinput) by [MentionInput](#mentioninput-component-props) component and add the `partTypes` property where you can define what mention or pattern types you want to support. It takes an array of [PartType](#parttype-type) objects.
 
 ```tsx
-<MentionInput
+<Mentions
   value={value}
   onChange={setValue}
 
@@ -112,15 +112,13 @@ API
 
 ### `MentionPartType` type props
 
-| **Property name**                     | **Description**                                                                       | **Type**                                                                              | **Required** 	| **Default** 	|
-|------------------------------------	|-----------------------------------------------------------------------------------	|-----------------------------------------------------------------------------------	|------------   |-----------    |
-| `trigger`                   	        | Character that will trigger current mention type                                     	| string                                        	                                    | true     	    |               |
-| `renderSuggestions`         	        | Renderer for mention suggestions component                                           	| (props: [MentionSuggestionsProps](#mentionsuggestionsprops-type-props)) => ReactNode 	| false    	    |               |
-| `allowedSpacesCount`         	        | How much spaces are allowed for mention keyword                                       | number                                                                             	| false    	    | 1             |
-| `isInsertSpaceAfterMention` 	        | Should we add a space after selected mentions if the mention is at the end of row 	| boolean                                       	                                    | false    	    | false         |
-| `isBottomMentionSuggestionsRender` 	| Should we render either at the top or bottom of the input                          	| boolean                                       	                                    | false    	    |               |
-| `textStyle`                 	        | Text style for mentions in `TextInput`                                                | StyleProp\<TextStyle>                         	                                    | false    	    |               |
-| `getPlainString`            	        | Function for generating custom mention text in text input                         	| (mention: [MentionData](#mentiondata-type-props)) => string              	            | false    	    |               |
+| **Property name**             | **Description**                                                                       | **Type**                                                                              | **Required** 	| **Default** 	|
+|---------------------------	|-----------------------------------------------------------------------------------	|-----------------------------------------------------------------------------------	|------------   |-----------    |
+| `trigger`                   	| Character that will trigger current mention type                                     	| string                                        	                                    | true     	    |               |
+| `renderSuggestions`         	| Renderer for mention suggestions component                                           	| (props: [MentionSuggestionsProps](#mentionsuggestionsprops-type-props)) => ReactNode 	| false    	    |               |
+| `isInsertSpaceAfterMention` 	| Should we add a space after selected mentions if the mention is at the end of row 	| boolean                                       	                                    | false    	    | false         |
+| `textStyle`                 	| Text style for mentions in `TextInput`                                                | StyleProp\<TextStyle>                         	                                    | false    	    |               |
+| `getPlainString`            	| Function for generating custom mention text in text input                         	| (mention: [MentionData](#mentiondata-type-props)) => string              	            | false    	    |               |
 
 ### `PatternPartType` type props
 
@@ -188,11 +186,11 @@ The extracted id - `123`
 ```
 
 
-Parsing `MentionInput`'s value
+Parsing `Mention`'s value
 -
 
 You can import RegEx that is using in the component and then extract all your mentions
-from `MentionInput`'s value using your own logic.
+from `Mention`'s value using your own logic.
 
 ```ts
 import { mentionRegEx } from 'react-native-controlled-mentions';
@@ -210,74 +208,6 @@ console.log(replaceMentionValues(value, ({id}) => `@${id}`)); // Hello @5! How a
 console.log(replaceMentionValues(value, ({name}) => `@${name}`)); // Hello @David Tabaka! How are you?
 ```
 
-Rendering `MentionInput`'s value
--
-If you want to parse and render your value somewhere else you can use `parseValue` tool which gives you array of parts and then use your own part renderer to resolve this issue.
-
-Here is an example:
-```tsx
-import {
-  Part,
-  PartType,
-  parseValue,
-  isMentionPartType,
-} from 'react-native-controlled-mentions';
-
-/**
- * Part renderer
- * 
- * @param part
- * @param index
- */
-const renderPart = (
-  part: Part,
-  index: number,
-) => {
-  // Just plain text
-  if (!part.partType) {
-    return <Text key={index}>{part.text}</Text>;
-  }
-
-  // Mention type part
-  if (isMentionPartType(part.partType)) {
-    return (
-      <Text
-        key={`${index}-${part.data?.trigger}`}
-        style={part.partType.textStyle}
-        onPress={() => console.log('Pressed', part.data)}
-      >
-        {part.text}
-      </Text>
-    );
-  }
-
-  // Other styled part types
-  return (
-    <Text
-      key={`${index}-pattern`}
-      style={part.partType.textStyle}
-    >
-      {part.text}
-    </Text>
-  );
-};
-
-/**
- * Value renderer. Parsing value to parts array and then mapping the array using 'renderPart'
- * 
- * @param value - value from MentionInput
- * @param partTypes - the part types array that you providing to MentionInput
- */
-const renderValue: FC = (
-  value: string,
-  partTypes: PartType[],
-) => {
-  const {parts} = parseValue(value, partTypes);
-
-  return <Text>{parts.map(renderPart)}</Text>;
-};
-```
-
 To Do
 -
 
@@ -291,10 +221,6 @@ Known issues
 * Mention name regex accepts white spaces (e.g. `{name: ' ', value: 1}`)
 * ~~Keyboard auto-correction not working if suggested word has the same length~~ FIXED
 * ~~Text becomes transparent when setting custom font size in TextInput~~ FIXED
-
-Support Me
--
-<a href="https://www.buymeacoffee.com/dabakovich" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 [npm-image]: https://img.shields.io/npm/v/react-native-controlled-mentions
 [npm-url]: https://npmjs.org/package/react-native-controlled-mentions

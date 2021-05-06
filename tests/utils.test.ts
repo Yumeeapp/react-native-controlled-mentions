@@ -1,12 +1,10 @@
 import { MentionPartType, Part, PartType, PatternPartType } from '../src/types';
 import {
   generateMentionPart,
+  parseValue,
   generatePlainTextPart,
   generateValueFromPartsAndChangedText,
-  getMentionPartSuggestionKeywords,
   getMentionValue,
-  parseValue,
-  replaceMentionValues,
 } from '../src/utils';
 
 const users = [
@@ -88,110 +86,9 @@ test('generates correct parts length from value', () => {
   ).toEqual(6);
 });
 
-test('generates correct parts', () => {
-  const mentionValue = '@[David](1:@)';
-  const expectedMentionPart = {
-    partType: mentionPartType,
-    text: '@David',
-    data: {
-      id: '1:@',
-      name: 'David',
-      trigger: '@',
-      original: '@[David](1:@)',
-    },
-    position: {start: 0, end: 6},
-  };
-
-  let {parts} = parseValue(mentionValue, [mentionPartType]);
-
-  expect(parts).toEqual<Part[]>([expectedMentionPart]);
-
-  ({parts} = parseValue(`${mentionValue} hey!`, [mentionPartType]));
-
-  expect(parts).toEqual<Part[]>([
-    expectedMentionPart,
-    {text: ' hey!', position: {start: 6, end: 11}},
-  ]);
-
-});
-
 test('generates value from parts and changed text', () => {
   const {parts, plainText} = parseValue('Hey', [mentionPartType]);
 
   const newValue = generateValueFromPartsAndChangedText(parts, plainText, 'Hey David!');
   expect(newValue).toEqual<string>('Hey David!');
-});
-
-test('getting correct mention part type keywords', () => {
-  let text = 'Hello @David Tabaka how are you?';
-
-  let {parts, plainText} = parseValue(text, [mentionPartType]);
-
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 0, end: 0}, [mentionPartType]
-  )).toEqual({'@': undefined});
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 7, end: 7}, [mentionPartType]
-  )).toEqual({'@': ''});
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 12, end: 12}, [mentionPartType]
-  )).toEqual({'@': 'David'});
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 19, end: 19}, [mentionPartType]
-  )).toEqual({'@': 'David Tabaka'});
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 20, end: 20}, [mentionPartType]
-  )).toEqual({'@': undefined});
-
-  // Text with already present mention part type
-  text = 'Hello @[David](2b) how are you?';
-  ({parts, plainText} = parseValue(text, [mentionPartType]));
-
-  // 'Hello @[Dav|id](2b) how are you?' - should not find keyword due to the we are in mention
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 10, end: 10}, [mentionPartType]
-  )).toEqual({'@': undefined});
-
-  // 'Hello @[David](2b) ho|w are you?' - should not find keyword due to the we have mention there
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 15, end: 15}, [mentionPartType]
-  )).toEqual({'@': undefined});
-
-  // 'Hello @[David](2b)| how are you?' - should not find keyword due to the we have mention there
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 12, end: 12}, [mentionPartType]
-  )).toEqual({'@': undefined});
-
-  // Text with email entering
-  text = 'Hello dabakovich@gmail.com';
-  ({parts, plainText} = parseValue(text, [mentionPartType]));
-
-  // 'Hello dabakovich@gmail.com' - should not find keyword due to the we don't have space or new line before trigger
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 17, end: 17}, [mentionPartType]
-  )).toEqual({'@': undefined});
-
-  // Text with triggers at the beginning of string or line
-  text = '@\n@';
-  ({parts, plainText} = parseValue(text, [mentionPartType]));
-
-  // 'Hello dabakovich@gmail.com' - should find trigger at the beginning of string
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 1, end: 1}, [mentionPartType]
-  )).toEqual({'@': ''});
-
-  // 'Hello dabakovich@gmail.com' - should find trigger at the beginning of line
-  expect(getMentionPartSuggestionKeywords(
-    parts, plainText, {start: 3, end: 3}, [mentionPartType]
-  )).toEqual({'@': ''});
-});
-
-test('replacing mention\'s value', () => {
-  const value = '@[David](1) and @[Mary](2)';
-
-  const replacedById = replaceMentionValues(value, ({id}) => `@${id}`);
-  expect(replacedById).toEqual<string>('@1 and @2');
-
-  const replacedByName = replaceMentionValues(value, ({name}) => `@${name}`);
-  expect(replacedByName).toEqual<string>('@David and @Mary');
 });
