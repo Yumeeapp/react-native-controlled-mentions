@@ -1,8 +1,9 @@
-import { Change, diffChars } from 'diff';
+import { diffChars } from 'diff';
 import { StyleProp, TextStyle } from 'react-native';
 // @ts-ignore the lib do not have TS declarations yet
 import matchAll from 'string.prototype.matchall';
 import {
+  CharactersDiffChange,
   MentionData,
   MentionPartType,
   Part,
@@ -12,13 +13,19 @@ import {
   Suggestion,
 } from '../types';
 
-const mentionRegEx = /(?<original>(?<trigger>.)\[(?<name>([^[]*))]\((?<id>([\d\w-]*))\))/gi;
+/**
+ * RegEx grouped results. Example - "@[Full Name](123abc)"
+ * We have 4 groups here:
+ * - The whole original string - "@[Full Name](123abc)"
+ * - Mention trigger - "@"
+ * - Name - "Full Name"
+ * - Id - "123abc"
+ */
+const mentionRegEx = /((.)\[([^[]*)]\(([^(^)]*)\))/gi;
 
 const defaultMentionTextStyle: StyleProp<TextStyle> = {fontWeight: 'bold', color: 'blue'};
 
 const defaultPlainStringGenerator = ({trigger}: MentionPartType, {name}: MentionData) => `${trigger}${name}`;
-
-type CharactersDiffChange = Omit<Change, 'count'> & { count: number };
 
 const isMentionPartType = (partType: PartType): partType is MentionPartType => {
   return (partType as MentionPartType).trigger != null;
@@ -79,6 +86,96 @@ const getPartsInterval = (parts: Part[], cursor: number, count: number): Part[] 
   }
 
   return partsInterval;
+};
+
+/**
+ * Function for getting object with keyword for each mention part type
+ *
+ * If keyword is undefined then we don't tracking mention typing and shouldn't show suggestions.
+ * If keyword is not undefined (even empty string '') then we are tracking mention typing.
+ *
+ * Examples where @name is just plain text yet, not mention:
+ * '|abc @name dfg' - keyword is undefined
+ * 'abc @| dfg' - keyword is ''
+ * 'abc @name| dfg' - keyword is 'name'
+ * 'abc @na|me dfg' - keyword is 'na'
+ * 'abc @|name dfg' - keyword is against ''
+ * 'abc @name |dfg' - keyword is 'name '
+ * 'abc @name dfg|' - keyword is 'name dfg'
+ * 'abc @name dfg |' - keyword is undefined (we have more than one space)
+ * 'abc @name dfg he|' - keyword is undefined (we have more than one space)
+ */
+const getMentionPartSuggestionKeywords = (
+  parts: Part[],
+  plainText: string,
+  selection: Position,
+  partTypes: PartType[],
+): { [trigger: string]: string | undefined } => {
+  const keywordByTrigger: { [trigger: string]: string | undefined } = {};
+
+  partTypes.filter(isMentionPartType).forEach((
+    {
+      trigger,
+      allowedSpacesCount = 1,
+    },
+  ) => {
+    keywordByTrigger[trigger] = undefined;
+
+    // Check if we don't have selection range
+    if (selection.end != selection.start) {
+      return;
+    }
+
+    // Find the part with the cursor
+    const part = parts.find(one => selection.end > one.position.start && selection.end <= one.position.end);
+
+    // Check if the cursor is not in mention type part
+    if (part == null || part.data != null) {
+      return;
+    }
+
+    const triggerIndex = plainText.lastIndexOf(trigger, selection.end);
+
+    // Return undefined in case when:
+    if (
+      // - the trigger index is not event found
+      triggerIndex == -1
+
+      // - the trigger index is out of found part with selection cursor
+      || triggerIndex < part.position.start
+
+      // - the trigger is not at the beginning and we don't have space or new line before trigger
+      || (triggerIndex > 0 && !/[\s\n]/gi.test(plainText[triggerIndex - 1]))
+    ) {
+      return;
+    }
+
+    // Looking for break lines and spaces between the current cursor and trigger
+    let spacesCount = 0;
+    for (let cursor = selection.end - 1; cursor >= triggerIndex; cursor -= 1) {
+      // Mention cannot have new line
+      if (plainText[cursor] === '\n') {
+        return;
+      }
+
+      // Incrementing space counter if the next symbol is space
+      if (plainText[cursor] === ' ') {
+        spacesCount += 1;
+
+        // Check maximum allowed spaces in trigger word
+        if (spacesCount > allowedSpacesCount) {
+          return;
+        }
+      }
+    }
+
+    keywordByTrigger[trigger] = plainText.substring(
+      triggerIndex + 1,
+      selection.end,
+    );
+  });
+
+  return keywordByTrigger;
 };
 
 /**
@@ -167,11 +264,6 @@ const generateValueWithAddedSuggestion = (
   }
 
   const triggerPartIndex = currentPart.text.lastIndexOf(mentionType.trigger, selection.end - currentPart.position.start);
-  const spacePartIndex = currentPart.text.lastIndexOf(' ', selection.end - currentPart.position.start - 1);
-
-  if (spacePartIndex > triggerPartIndex) {
-    return;
-  }
 
   const newMentionPartPosition: Position = {
     start: triggerPartIndex,
@@ -244,20 +336,14 @@ const generateMentionPart = (mentionPartType: MentionPartType, mention: MentionD
  * @param result - matched regex result
  * @param positionOffset - position offset from the very beginning of text
  */
-const generateRegexResultPart = (partType: PartType, result: RegexMatchResult, positionOffset = 0): Part => {
-  if (isMentionPartType(partType)) {
-    return generateMentionPart(partType, result.groups, positionOffset);
-  }
-
-  return {
-    text: result[0],
-    position: {
-      start: positionOffset,
-      end: positionOffset + result[0].length,
-    },
-    partType,
-  };
-};
+const generateRegexResultPart = (partType: PartType, result: RegexMatchResult, positionOffset = 0): Part => ({
+  text: result[0],
+  position: {
+    start: positionOffset,
+    end: positionOffset + result[0].length,
+  },
+  partType,
+});
 
 /**
  * Method for generation mention value that accepts mention regex
@@ -266,6 +352,13 @@ const generateRegexResultPart = (partType: PartType, result: RegexMatchResult, p
  * @param suggestion
  */
 const getMentionValue = (trigger: string, suggestion: Suggestion) => `${trigger}[${suggestion.name}](${suggestion.id})`;
+
+const getMentionDataFromRegExMatchResult = ([, original, trigger, name, id]: RegexMatchResult): MentionData => ({
+  original,
+  trigger,
+  name,
+  id,
+});
 
 /**
  * Recursive function for deep parse MentionInput's value and get plainText with parts
@@ -279,6 +372,9 @@ const parseValue = (
   partTypes: PartType[],
   positionOffset = 0,
 ): { plainText: string; parts: Part[] } => {
+  if (value == null) {
+    value = '';
+  }
 
   let plainText = '';
   let parts: Part[] = [];
@@ -312,12 +408,22 @@ const parseValue = (
     for (let i = 0; i < matches.length; i++) {
       const result = matches[i];
 
-      // Matched pattern is a mention and the mention doesn't match current mention type
-      // We should parse the mention with rest part types
-      if (isMentionPartType(partType) && result.groups.trigger !== partType.trigger) {
-        const plainTextAndParts = parseValue(result['0'], restPartTypes, positionOffset + plainText.length);
-        parts = parts.concat(plainTextAndParts.parts);
-        plainText += plainTextAndParts.plainText;
+      if (isMentionPartType(partType)) {
+        const mentionData = getMentionDataFromRegExMatchResult(result);
+
+        // Matched pattern is a mention and the mention doesn't match current mention type
+        // We should parse the mention with rest part types
+        if (mentionData.trigger !== partType.trigger) {
+          const plainTextAndParts = parseValue(mentionData.original, restPartTypes, positionOffset + plainText.length);
+          parts = parts.concat(plainTextAndParts.parts);
+          plainText += plainTextAndParts.plainText;
+        } else {
+          const part = generateMentionPart(partType, mentionData, positionOffset + plainText.length);
+
+          parts.push(part);
+
+          plainText += part.text;
+        }
       } else {
         const part = generateRegexResultPart(partType, result, positionOffset + plainText.length);
 
@@ -345,7 +451,7 @@ const parseValue = (
     }
   }
 
-  // Exiting from generatePartsFromValue
+  // Exiting from parseValue
   return {
     plainText,
     parts,
@@ -364,13 +470,13 @@ const getValueFromParts = (parts: Part[]) => parts
 /**
  * Replace all mention values in value to some specified format
  *
- * @param value - value that is generated by Mentions component
+ * @param value - value that is generated by MentionInput component
  * @param replacer - function that takes mention object as parameter and returns string
  */
 const replaceMentionValues = (
   value: string,
   replacer: (mention: MentionData) => string,
-) => value.replace(mentionRegEx, (mention, original, trigger, name, id) => replacer({
+) => value.replace(mentionRegEx, (fullMatch, original, trigger, name, id) => replacer({
   original,
   trigger,
   name,
@@ -381,11 +487,11 @@ export {
   mentionRegEx,
   defaultMentionTextStyle,
   isMentionPartType,
+  getMentionPartSuggestionKeywords,
   generateValueFromPartsAndChangedText,
   generateValueWithAddedSuggestion,
   generatePlainTextPart,
   generateMentionPart,
-  generateRegexResultPart,
   getMentionValue,
   parseValue,
   getValueFromParts,

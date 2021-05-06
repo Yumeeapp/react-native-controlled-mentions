@@ -1,5 +1,6 @@
-import { ReactNode, Ref } from "react";
-import {
+import type { Change } from "diff";
+import type { ReactNode, Ref } from "react";
+import type {
   StyleProp,
   TextInput,
   TextInputProps,
@@ -19,9 +20,23 @@ type MentionData = {
   id: string;
 };
 
-type RegexMatchResult = {
+type CharactersDiffChange = Omit<Change, "count"> & { count: number };
+
+type RegexMatchResult = string[] & {
   // Matched string
   0: string;
+
+  // original
+  1: string;
+
+  // trigger
+  2: string;
+
+  // name
+  3: string;
+
+  // id
+  4: string;
 
   // Start position of matched text in whole string
   index: number;
@@ -48,8 +63,14 @@ type MentionPartType = {
   // Function for render suggestions
   renderSuggestions?: (props: MentionSuggestionsProps) => ReactNode;
 
+  // How much spaces are allowed for mention keyword
+  allowedSpacesCount?: number;
+
   // Should we add a space after selected mentions if the mention is at the end of row
   isInsertSpaceAfterMention?: boolean;
+
+  // Should we render either at the top or bottom of the input
+  isBottomMentionSuggestionsRender?: boolean;
 
   // Custom mention styles in text input
   textStyle?: StyleProp<TextStyle>;
@@ -88,9 +109,10 @@ type MentionInputProps = Omit<TextInputProps, "onChange"> & {
   containerStyle?: StyleProp<ViewStyle>;
 };
 
-export {
+export type {
   Suggestion,
   MentionData,
+  CharactersDiffChange,
   RegexMatchResult,
   Position,
   Part,
